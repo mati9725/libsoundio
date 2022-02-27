@@ -93,8 +93,8 @@ static void read_callback(struct SoundIoInStream* instream, int frame_count_min,
         else {
             for (int frame = 0; frame < frame_count; frame += 1) {
                 for (int ch = 0; ch < instream->layout.channel_count; ch += 1) {
-                    printf("step %d", areas[ch].step);
-                    printf("char %d, %d, %d, %d", (int)areas[ch].ptr[0], (int)areas[ch].ptr[1], (int)areas[ch].ptr[2], (int)areas[ch].ptr[3]);
+                    printf("step %d\n", areas[ch].step);
+                    printf("char %d, %d, %d, %d\n", (int)areas[ch].ptr[0], (int)areas[ch].ptr[1], (int)areas[ch].ptr[2], (int)areas[ch].ptr[3]);
                     memcpy(write_ptr, areas[ch].ptr, instream->bytes_per_sample);
                     areas[ch].ptr += areas[ch].step;
                     write_ptr += instream->bytes_per_sample;
