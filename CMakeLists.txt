@@ -286,17 +286,6 @@ if(BUILD_EXAMPLE_PROGRAMS)
     endif()
     install(TARGETS sio_microphone DESTINATION ${CMAKE_INSTALL_BINDIR})
 
-    add_executable(sio_microphone_with_silence_detection example/sio_microphone_with_silence_detection.c)
-    set_target_properties(sio_microphone_with_silence_detection PROPERTIES
-        LINKER_LANGUAGE C
-        COMPILE_FLAGS ${EXAMPLE_CFLAGS})
-    if(BUILD_DYNAMIC_LIBS)
-        target_link_libraries(sio_microphone_with_silence_detection libsoundio_shared)
-    else()
-        target_link_libraries(sio_microphone_with_silence_detection libsoundio_static ${LIBSOUNDIO_LIBS})
-    endif()
-    install(TARGETS sio_microphone_with_silence_detection DESTINATION ${CMAKE_INSTALL_BINDIR})
-
     add_executable(sio_record example/sio_record.c)
     set_target_properties(sio_record PROPERTIES
         LINKER_LANGUAGE C

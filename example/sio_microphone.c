@@ -13,7 +13,7 @@
 #include <string.h>
 #include <math.h>
 
-struct SoundIoRingBuffer *ring_buffer = NULL;
+struct SoundIoRingBuffer* ring_buffer = NULL;
 
 static enum SoundIoFormat prioritized_formats[] = {
     SoundIoFormatFloat32NE,
@@ -46,10 +46,10 @@ static int prioritized_sample_rates[] = {
 };
 
 
-__attribute__ ((cold))
-__attribute__ ((noreturn))
-__attribute__ ((format (printf, 1, 2)))
-static void panic(const char *format, ...) {
+__attribute__((cold))
+__attribute__((noreturn))
+__attribute__((format(printf, 1, 2)))
+static void panic(const char* format, ...) {
     va_list ap;
     va_start(ap, format);
     vfprintf(stderr, format, ap);
@@ -62,10 +62,10 @@ static int min_int(int a, int b) {
     return (a < b) ? a : b;
 }
 
-static void read_callback(struct SoundIoInStream *instream, int frame_count_min, int frame_count_max) {
-    struct SoundIoChannelArea *areas;
+static void read_callback(struct SoundIoInStream* instream, int frame_count_min, int frame_count_max) {
+    struct SoundIoChannelArea* areas;
     int err;
-    char *write_ptr = soundio_ring_buffer_write_ptr(ring_buffer);
+    char* write_ptr = soundio_ring_buffer_write_ptr(ring_buffer);
     int free_bytes = soundio_ring_buffer_free_count(ring_buffer);
     int free_count = free_bytes / instream->bytes_per_frame;
 
@@ -89,9 +89,12 @@ static void read_callback(struct SoundIoInStream *instream, int frame_count_min,
             // silence for the size of the hole.
             memset(write_ptr, 0, frame_count * instream->bytes_per_frame);
             fprintf(stderr, "Dropped %d frames due to internal overflow\n", frame_count);
-        } else {
+        }
+        else {
             for (int frame = 0; frame < frame_count; frame += 1) {
                 for (int ch = 0; ch < instream->layout.channel_count; ch += 1) {
+                    printf("step %d", areas[ch].step);
+                    printf("char %c", areas[ch].ptr);
                     memcpy(write_ptr, areas[ch].ptr, instream->bytes_per_sample);
                     areas[ch].ptr += areas[ch].step;
                     write_ptr += instream->bytes_per_sample;
@@ -111,13 +114,13 @@ static void read_callback(struct SoundIoInStream *instream, int frame_count_min,
     soundio_ring_buffer_advance_write_ptr(ring_buffer, advance_bytes);
 }
 
-static void write_callback(struct SoundIoOutStream *outstream, int frame_count_min, int frame_count_max) {
-    struct SoundIoChannelArea *areas;
+static void write_callback(struct SoundIoOutStream* outstream, int frame_count_min, int frame_count_max) {
+    struct SoundIoChannelArea* areas;
     int frames_left;
     int frame_count;
     int err;
 
-    char *read_ptr = soundio_ring_buffer_read_ptr(ring_buffer);
+    char* read_ptr = soundio_ring_buffer_read_ptr(ring_buffer);
     int fill_bytes = soundio_ring_buffer_fill_count(ring_buffer);
     int fill_count = fill_bytes / outstream->bytes_per_frame;
 
@@ -127,7 +130,7 @@ static void write_callback(struct SoundIoOutStream *outstream, int frame_count_m
         for (;;) {
             frame_count = frames_left;
             if (frame_count <= 0)
-              return;
+                return;
             if ((err = soundio_outstream_begin_write(outstream, &areas, &frame_count)))
                 panic("begin write error: %s", soundio_strerror(err));
             if (frame_count <= 0)
@@ -173,74 +176,88 @@ static void write_callback(struct SoundIoOutStream *outstream, int frame_count_m
     soundio_ring_buffer_advance_read_ptr(ring_buffer, read_count * outstream->bytes_per_frame);
 }
 
-static void underflow_callback(struct SoundIoOutStream *outstream) {
+static void underflow_callback(struct SoundIoOutStream* outstream) {
     static int count = 0;
     fprintf(stderr, "underflow %d\n", ++count);
 }
 
-static int usage(char *exe) {
+static int usage(char* exe) {
     fprintf(stderr, "Usage: %s [options]\n"
-            "Options:\n"
-            "  [--backend dummy|alsa|pulseaudio|jack|coreaudio|wasapi]\n"
-            "  [--in-device id]\n"
-            "  [--in-raw]\n"
-            "  [--out-device id]\n"
-            "  [--out-raw]\n"
-            "  [--latency seconds]\n"
-            , exe);
+        "Options:\n"
+        "  [--backend dummy|alsa|pulseaudio|jack|coreaudio|wasapi]\n"
+        "  [--in-device id]\n"
+        "  [--in-raw]\n"
+        "  [--out-device id]\n"
+        "  [--out-raw]\n"
+        "  [--latency seconds]\n"
+        , exe);
     return 1;
 }
 
-int main(int argc, char **argv) {
-    char *exe = argv[0];
+int main(int argc, char** argv) {
+    char* exe = argv[0];
     enum SoundIoBackend backend = SoundIoBackendNone;
-    char *in_device_id = NULL;
-    char *out_device_id = NULL;
+    char* in_device_id = NULL;
+    char* out_device_id = NULL;
     bool in_raw = false;
     bool out_raw = false;
 
     double microphone_latency = 0.2; // seconds
 
     for (int i = 1; i < argc; i += 1) {
-        char *arg = argv[i];
+        char* arg = argv[i];
         if (arg[0] == '-' && arg[1] == '-') {
             if (strcmp(arg, "--in-raw") == 0) {
                 in_raw = true;
-            } else if (strcmp(arg, "--out-raw") == 0) {
+            }
+            else if (strcmp(arg, "--out-raw") == 0) {
                 out_raw = true;
-            } else if (++i >= argc) {
+            }
+            else if (++i >= argc) {
                 return usage(exe);
-            } else if (strcmp(arg, "--backend") == 0) {
+            }
+            else if (strcmp(arg, "--backend") == 0) {
                 if (strcmp("dummy", argv[i]) == 0) {
                     backend = SoundIoBackendDummy;
-                } else if (strcmp("alsa", argv[i]) == 0) {
+                }
+                else if (strcmp("alsa", argv[i]) == 0) {
                     backend = SoundIoBackendAlsa;
-                } else if (strcmp("pulseaudio", argv[i]) == 0) {
+                }
+                else if (strcmp("pulseaudio", argv[i]) == 0) {
                     backend = SoundIoBackendPulseAudio;
-                } else if (strcmp("jack", argv[i]) == 0) {
+                }
+                else if (strcmp("jack", argv[i]) == 0) {
                     backend = SoundIoBackendJack;
-                } else if (strcmp("coreaudio", argv[i]) == 0) {
+                }
+                else if (strcmp("coreaudio", argv[i]) == 0) {
                     backend = SoundIoBackendCoreAudio;
-                } else if (strcmp("wasapi", argv[i]) == 0) {
+                }
+                else if (strcmp("wasapi", argv[i]) == 0) {
                     backend = SoundIoBackendWasapi;
-                } else {
+                }
+                else {
                     fprintf(stderr, "Invalid backend: %s\n", argv[i]);
                     return 1;
                 }
-            } else if (strcmp(arg, "--in-device") == 0) {
+            }
+            else if (strcmp(arg, "--in-device") == 0) {
                 in_device_id = argv[i];
-            } else if (strcmp(arg, "--out-device") == 0) {
+            }
+            else if (strcmp(arg, "--out-device") == 0) {
                 out_device_id = argv[i];
-            } else if (strcmp(arg, "--latency") == 0) {
+            }
+            else if (strcmp(arg, "--latency") == 0) {
                 microphone_latency = atof(argv[i]);
-            } else {
+            }
+            else {
                 return usage(exe);
             }
-        } else {
+        }
+        else {
             return usage(exe);
         }
     }
-    struct SoundIo *soundio = soundio_create();
+    struct SoundIo* soundio = soundio_create();
     if (!soundio)
         panic("out of memory");
 
@@ -263,7 +280,7 @@ int main(int argc, char **argv) {
     if (in_device_id) {
         bool found = false;
         for (int i = 0; i < soundio_input_device_count(soundio); i += 1) {
-            struct SoundIoDevice *device = soundio_get_input_device(soundio, i);
+            struct SoundIoDevice* device = soundio_get_input_device(soundio, i);
             if (device->is_raw == in_raw && strcmp(device->id, in_device_id) == 0) {
                 in_device_index = i;
                 found = true;
@@ -280,7 +297,7 @@ int main(int argc, char **argv) {
     if (out_device_id) {
         bool found = false;
         for (int i = 0; i < soundio_output_device_count(soundio); i += 1) {
-            struct SoundIoDevice *device = soundio_get_output_device(soundio, i);
+            struct SoundIoDevice* device = soundio_get_output_device(soundio, i);
             if (device->is_raw == out_raw && strcmp(device->id, out_device_id) == 0) {
                 out_device_index = i;
                 found = true;
@@ -293,11 +310,11 @@ int main(int argc, char **argv) {
             panic("invalid output device id: %s", out_device_id);
     }
 
-    struct SoundIoDevice *out_device = soundio_get_output_device(soundio, out_device_index);
+    struct SoundIoDevice* out_device = soundio_get_output_device(soundio, out_device_index);
     if (!out_device)
         panic("could not get output device: out of memory");
 
-    struct SoundIoDevice *in_device = soundio_get_input_device(soundio, in_device_index);
+    struct SoundIoDevice* in_device = soundio_get_input_device(soundio, in_device_index);
     if (!in_device)
         panic("could not get input device: out of memory");
 
@@ -305,14 +322,14 @@ int main(int argc, char **argv) {
     fprintf(stderr, "Output device: %s\n", out_device->name);
 
     soundio_device_sort_channel_layouts(out_device);
-    const struct SoundIoChannelLayout *layout = soundio_best_matching_channel_layout(
-            out_device->layouts, out_device->layout_count,
-            in_device->layouts, in_device->layout_count);
+    const struct SoundIoChannelLayout* layout = soundio_best_matching_channel_layout(
+        out_device->layouts, out_device->layout_count,
+        in_device->layouts, in_device->layout_count);
 
     if (!layout)
         panic("channel layouts not compatible");
 
-    int *sample_rate;
+    int* sample_rate;
     for (sample_rate = prioritized_sample_rates; *sample_rate; sample_rate += 1) {
         if (soundio_device_supports_sample_rate(in_device, *sample_rate) &&
             soundio_device_supports_sample_rate(out_device, *sample_rate))
@@ -323,7 +340,7 @@ int main(int argc, char **argv) {
     if (!*sample_rate)
         panic("incompatible sample rates");
 
-    enum SoundIoFormat *fmt;
+    enum SoundIoFormat* fmt;
     for (fmt = prioritized_formats; *fmt != SoundIoFormatInvalid; fmt += 1) {
         if (soundio_device_supports_format(in_device, *fmt) &&
             soundio_device_supports_format(out_device, *fmt))
@@ -334,7 +351,7 @@ int main(int argc, char **argv) {
     if (*fmt == SoundIoFormatInvalid)
         panic("incompatible sample formats");
 
-    struct SoundIoInStream *instream = soundio_instream_create(in_device);
+    struct SoundIoInStream* instream = soundio_instream_create(in_device);
     if (!instream)
         panic("out of memory");
     instream->format = *fmt;
@@ -348,7 +365,7 @@ int main(int argc, char **argv) {
         return 1;
     }
 
-    struct SoundIoOutStream *outstream = soundio_outstream_create(out_device);
+    struct SoundIoOutStream* outstream = soundio_outstream_create(out_device);
     if (!outstream)
         panic("out of memory");
     outstream->format = *fmt;
@@ -367,7 +384,7 @@ int main(int argc, char **argv) {
     ring_buffer = soundio_ring_buffer_create(soundio, capacity);
     if (!ring_buffer)
         panic("unable to create ring buffer: out of memory");
-    char *buf = soundio_ring_buffer_write_ptr(ring_buffer);
+    char* buf = soundio_ring_buffer_write_ptr(ring_buffer);
     int fill_count = microphone_latency * outstream->sample_rate * outstream->bytes_per_frame;
     memset(buf, 0, fill_count);
     soundio_ring_buffer_advance_write_ptr(ring_buffer, fill_count);
